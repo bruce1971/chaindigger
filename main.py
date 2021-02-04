@@ -11,18 +11,44 @@ address = '181nc7DbpcYjVrpKtUf3WvDmvusvhPuXV3'
 # EXAMPLE: single output, possibly an exchange deposit account
 # address = '12cgpFdJViXbwHbhrA3TuW1EGnL25Zqc3P'
 
-transactions = []
+links = []
+points = {}
 url = 'https://blockstream.info/api/address/' + address + '/txs'
 response = requests.get(url)
 
 for tx in response.json():
-    for input in tx['vin']:
-        for output in tx['vout']:
-            simple_tx = {}
-            simple_tx['from'] = input['prevout']['scriptpubkey_address']
-            simple_tx['to'] = output['scriptpubkey_address']
-            simple_tx['amount'] = output['value']
-            simple_tx['txid'] = tx['txid']
-            transactions.append(simple_tx)
+    for tx_input in tx['vin']:
+        link = {
+            'source': tx_input['prevout']['scriptpubkey_address'],
+            'target': tx['txid'],
+            'value': tx_input['prevout']['value']
+        }
+        links.append(link)
+        points[link['source']] = {
+            'id': link['source'],
+            'type': 'address'
+        }
+        points[link['target']] = {
+            'id': link['target'],
+            'type': 'transaction'
+        }
 
-print(transactions)
+    for tx_output in tx['vout']:
+        link = {
+            'source': tx['txid'],
+            'target': tx_output['scriptpubkey_address'],
+            'value': tx_output['value']
+        }
+        links.append(link)
+        points[link['source']] = {
+            'id': link['source'],
+            'type': 'transaction'
+        }
+        points[link['target']] = {
+            'id': link['target'],
+            'type': 'address'
+        }
+
+print(links)
+print('--------')
+print(list(points.values()))
